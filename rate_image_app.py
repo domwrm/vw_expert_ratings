@@ -200,11 +200,12 @@ if expert_id:
         st.header(f"Participant ID: {current_participant_id}")
         
         # Create a 3x2 grid for photos - 3 on top, 3 on bottom
-        row1_cols = st.columns(3)
-        row2_cols = st.columns(3)
         
         # Display first row of photos (1-3) - Stage 1
         st.subheader("Stage 1")
+        
+        # Row for the first three photos
+        row1_cols = st.columns(3)
         for i in range(3):
             photo_position = i + 1
             with row1_cols[i]:
@@ -227,6 +228,7 @@ if expert_id:
             stage1_value = 4  # Default to middle value (4)
             stage1_novelty = 4  # Default to middle value (4)
         
+        # Place all Stage 1 ratings directly under the first row of images
         # One value rating for the entire row (Stage 1)
         st.subheader("Value Rating for Stage 1:")
         stage1_value = st.slider(
@@ -264,6 +266,9 @@ if expert_id:
         
         # Display second row of photos (4-6) - Stage 2
         st.subheader("Stage 2")
+        
+        # Row for the second three photos
+        row2_cols = st.columns(3)
         for i in range(3):
             photo_position = i + 4
             with row2_cols[i]:
