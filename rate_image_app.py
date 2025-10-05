@@ -230,7 +230,7 @@ if expert_id:
         
         # Place all Stage 1 ratings directly under the first row of images
         # One value rating for the entire row (Stage 1)
-        st.subheader("Value Rating for Stage 1:")
+        st.subheader("Value: How well does this final image meet the client's requirements?")
         stage1_value = st.slider(
             "Value",
             min_value=1,
@@ -241,7 +241,7 @@ if expert_id:
         )
         
         # One novelty rating for the entire row (Stage 1)
-        st.subheader("Novelty Rating for Stage 1:")
+        st.subheader("Novelty: How innovative is this chair design?")
         stage1_novelty = st.slider(
             "Novelty",
             min_value=1,
@@ -292,7 +292,7 @@ if expert_id:
             stage2_novelty = 4  # Default to middle value (4)
         
         # One value rating for the entire row (Stage 2)
-        st.subheader("Value Rating for Stage 2:")
+        st.subheader("Value: How well does this final image meet the client's requirements?")
         stage2_value = st.slider(
             "Value",
             min_value=1,
@@ -303,7 +303,7 @@ if expert_id:
         )
         
         # One novelty rating for the entire row (Stage 2)
-        st.subheader("Novelty Rating for Stage 2:")
+        st.subheader("Novelty: How innovative is this chair design?")
         stage2_novelty = st.slider(
             "Novelty",
             min_value=1,
