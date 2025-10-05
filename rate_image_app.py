@@ -21,7 +21,6 @@ def load_or_create_ratings():
                 "photo_position",
                 "value",
                 "novelty",
-                "feasibility",
             ]
         )
         ratings_df.to_csv("expert_ratings.csv", index=False)
@@ -65,7 +64,7 @@ def save_participant_order_csv(order_df):
 
 # Function to save or update ratings
 def save_or_update_ratings(
-    ratings_df, expert_id, participant_id, photo_position, value, novelty, feasibility
+    ratings_df, expert_id, participant_id, photo_position, value, novelty
 ):
     existing_rating = ratings_df[
         (ratings_df["expert_id"] == expert_id) & 
@@ -77,8 +76,8 @@ def save_or_update_ratings(
         # Update existing rating
         ratings_df.loc[
             existing_rating.index,
-            ["value", "novelty", "feasibility"],
-        ] = [value, novelty, feasibility]
+            ["value", "novelty"],
+        ] = [value, novelty]
     else:
         # Append new rating
         new_ratings = pd.DataFrame(
@@ -88,7 +87,6 @@ def save_or_update_ratings(
                 "photo_position": [photo_position],
                 "value": [value],
                 "novelty": [novelty],
-                "feasibility": [feasibility],
             }
         )
         ratings_df = pd.concat([ratings_df, new_ratings], ignore_index=True)
@@ -164,19 +162,19 @@ if expert_id:
         
         st.header(f"Participant ID: {current_participant_id}")
         
-        # Create a 3x2 grid for photos
+        # Create a 3x2 grid for photos - 3 on top, 3 on bottom
         row1_cols = st.columns(3)
         row2_cols = st.columns(3)
         
-        # Combine columns into a flat list for easier iteration
-        photo_cols = row1_cols + row2_cols
-        
-        # Display each photo and its rating widgets
-        for i, col in enumerate(photo_cols):
+        # Process first row (photos 1-3)
+        for i in range(3):
             photo_position = i + 1
-            with col:
-                # Use screenshot from repo instead of dynamic data
-                st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
+            with row1_cols[i]:
+                # Use screenshot from repo
+                try:
+                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
+                except:
+                    st.error(f"Photo {photo_position} not found")
                 
                 # Check for existing ratings
                 existing_rating = ratings_df[
@@ -188,56 +186,97 @@ if expert_id:
                 if not existing_rating.empty:
                     value = existing_rating["value"].values[0]
                     novelty = existing_rating["novelty"].values[0]
-                    feasibility = existing_rating["feasibility"].values[0]
-                    
-                    # Convert ratings to integers for the radio button index
-                    value_index = int(value) - 1 if pd.notna(value) else None
-                    novelty_index = int(novelty) - 1 if pd.notna(novelty) else None
-                    feasibility_index = int(feasibility) - 1 if pd.notna(feasibility) else None
                 else:
-                    value_index = None
-                    novelty_index = None
-                    feasibility_index = None
+                    value = None
+                    novelty = None
                 
-                # Display rating widgets for each photo
+                # Display rating widgets for this photo - one rating per row
                 st.markdown(f"<p class='rating-header'>Photo {photo_position} Ratings:</p>", unsafe_allow_html=True)
                 
                 value = st.select_slider(
                     "Value",
                     options=[1, 2, 3, 4, 5, 6, 7],
-                    value=value_index + 1 if value_index is not None else None,
+                    value=value,
                     key=f"value_{current_participant_id}_{photo_position}"
                 )
                 
                 novelty = st.select_slider(
                     "Novelty",
                     options=[1, 2, 3, 4, 5, 6, 7],
-                    value=novelty_index + 1 if novelty_index is not None else None,
+                    value=novelty,
                     key=f"novelty_{current_participant_id}_{photo_position}"
                 )
                 
-                feasibility = st.select_slider(
-                    "Feasibility",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=feasibility_index + 1 if feasibility_index is not None else None,
-                    key=f"feasibility_{current_participant_id}_{photo_position}"
-                )
-                
-                # Save button for each photo
+                # Save button for this photo
                 if st.button("Save Ratings", key=f"save_{current_participant_id}_{photo_position}"):
-                    if value is not None and novelty is not None and feasibility is not None:
+                    if value is not None and novelty is not None:
                         ratings_df = save_or_update_ratings(
                             ratings_df,
                             expert_id,
                             current_participant_id,
                             photo_position,
                             value,
-                            novelty,
-                            feasibility
+                            novelty
                         )
                         st.success(f"Ratings saved for Photo {photo_position}!")
                     else:
-                        st.warning("Please provide ratings for all three categories.")
+                        st.warning("Please provide ratings for both categories.")
+        
+        # Process second row (photos 4-6)
+        for i in range(3):
+            photo_position = i + 4
+            with row2_cols[i]:
+                # Use screenshot from repo
+                try:
+                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
+                except:
+                    st.error(f"Photo {photo_position} not found")
+                
+                # Check for existing ratings
+                existing_rating = ratings_df[
+                    (ratings_df["expert_id"] == expert_id) &
+                    (ratings_df["participant_id"] == current_participant_id) &
+                    (ratings_df["photo_position"] == photo_position)
+                ]
+                
+                if not existing_rating.empty:
+                    value = existing_rating["value"].values[0]
+                    novelty = existing_rating["novelty"].values[0]
+                else:
+                    value = None
+                    novelty = None
+                
+                # Display rating widgets for this photo - one rating per row
+                st.markdown(f"<p class='rating-header'>Photo {photo_position} Ratings:</p>", unsafe_allow_html=True)
+                
+                value = st.select_slider(
+                    "Value",
+                    options=[1, 2, 3, 4, 5, 6, 7],
+                    value=value,
+                    key=f"value_{current_participant_id}_{photo_position}"
+                )
+                
+                novelty = st.select_slider(
+                    "Novelty",
+                    options=[1, 2, 3, 4, 5, 6, 7],
+                    value=novelty,
+                    key=f"novelty_{current_participant_id}_{photo_position}"
+                )
+                
+                # Save button for this photo
+                if st.button("Save Ratings", key=f"save_{current_participant_id}_{photo_position}"):
+                    if value is not None and novelty is not None:
+                        ratings_df = save_or_update_ratings(
+                            ratings_df,
+                            expert_id,
+                            current_participant_id,
+                            photo_position,
+                            value,
+                            novelty
+                        )
+                        st.success(f"Ratings saved for Photo {photo_position}!")
+                    else:
+                        st.warning("Please provide ratings for both categories.")
         
         # Navigation buttons at the bottom
         col1, col2 = st.columns(2)
