@@ -15,7 +15,7 @@ def load_or_create_ratings():
             columns=[
                 "expert_id",
                 "participant_id",
-                "photo_position",
+                "stage",
                 "value",
                 "novelty",
             ]
@@ -61,12 +61,12 @@ def save_participant_order_csv(order_df):
 
 # Function to save or update ratings
 def save_or_update_ratings(
-    ratings_df, expert_id, participant_id, photo_position, value, novelty
+    ratings_df, expert_id, participant_id, stage, value, novelty
 ):
     existing_rating = ratings_df[
         (ratings_df["expert_id"] == expert_id) & 
         (ratings_df["participant_id"] == participant_id) & 
-        (ratings_df["photo_position"] == photo_position)
+        (ratings_df["stage"] == stage)
     ]
     
     if not existing_rating.empty:
@@ -81,7 +81,7 @@ def save_or_update_ratings(
             {
                 "expert_id": [expert_id],
                 "participant_id": [participant_id],
-                "photo_position": [photo_position],
+                "stage": [stage],
                 "value": [value],
                 "novelty": [novelty],
             }
@@ -121,13 +121,13 @@ if expert_id:
         
         # Initialize session state for current participant index
         if "current_participant_index" not in st.session_state:
-            # Find the first participant that doesn't have all 6 photos rated
+            # Find the first participant that hasn't been rated
             for i, participant_id in enumerate(expert_order):
                 completed_ratings = ratings_df[
                     (ratings_df["expert_id"] == expert_id) & 
                     (ratings_df["participant_id"] == participant_id)
                 ]
-                if len(completed_ratings) < 6:  # 6 photos per participant
+                if len(completed_ratings) < 2:  # 2 stages per participant
                     st.session_state["current_participant_index"] = i
                     break
             else:
@@ -137,7 +137,7 @@ if expert_id:
         current_participant_id = expert_order[current_index]
         
         # Calculate progress
-        total_ratings_expected = len(participant_ids) * 6  # 6 photos per participant
+        total_ratings_expected = len(participant_ids) * 2  # 2 stages per participant
         completed_ratings = ratings_df[ratings_df["expert_id"] == expert_id]
         completed_count = len(completed_ratings)
         
@@ -169,7 +169,8 @@ if expert_id:
         row1_cols = st.columns(3)
         row2_cols = st.columns(3)
         
-        # Display first row of photos (1-3)
+        # Display first row of photos (1-3) - Stage 1
+        st.subheader("Stage 1")
         for i in range(3):
             photo_position = i + 1
             with row1_cols[i]:
@@ -178,86 +179,61 @@ if expert_id:
                 except:
                     st.error(f"Photo {photo_position} not found")
         
-        # Value ratings for all photos in row 1
-        st.subheader("Value Ratings for Photos 1-3:")
+        # Check for existing ratings for Stage 1
+        existing_stage1 = ratings_df[
+            (ratings_df["expert_id"] == expert_id) &
+            (ratings_df["participant_id"] == current_participant_id) &
+            (ratings_df["stage"] == 1)
+        ]
         
-        # Get existing values for photos 1-3
-        existing_values = []
-        for i in range(3):
-            photo_position = i + 1
-            existing_rating = ratings_df[
-                (ratings_df["expert_id"] == expert_id) &
-                (ratings_df["participant_id"] == current_participant_id) &
-                (ratings_df["photo_position"] == photo_position)
-            ]
-            if not existing_rating.empty:
-                existing_values.append(existing_rating["value"].values[0])
-            else:
-                existing_values.append(4)  # Default to middle value (4)
+        if not existing_stage1.empty:
+            stage1_value = existing_stage1["value"].values[0]
+            stage1_novelty = existing_stage1["novelty"].values[0]
+        else:
+            stage1_value = 4  # Default to middle value (4)
+            stage1_novelty = 4  # Default to middle value (4)
         
-        # Create columns for value ratings
-        value_cols = st.columns(3)
-        value_ratings = []
+        # One value rating for the entire row (Stage 1)
+        st.subheader("Value Rating for Stage 1:")
+        stage1_value = st.slider(
+            "Value",
+            min_value=1,
+            max_value=7,
+            value=stage1_value,
+            step=1,
+            key=f"value_{current_participant_id}_stage1"
+        )
         
-        for i in range(3):
-            with value_cols[i]:
-                value = st.select_slider(
-                    f"Photo {i+1} Value",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=existing_values[i],
-                    key=f"value_{current_participant_id}_{i+1}"
+        # One novelty rating for the entire row (Stage 1)
+        st.subheader("Novelty Rating for Stage 1:")
+        stage1_novelty = st.slider(
+            "Novelty",
+            min_value=1,
+            max_value=7,
+            value=stage1_novelty,
+            step=1,
+            key=f"novelty_{current_participant_id}_stage1"
+        )
+        
+        # Save button for Stage 1
+        if st.button("Save Ratings for Stage 1"):
+            if stage1_value is not None and stage1_novelty is not None:
+                ratings_df = save_or_update_ratings(
+                    ratings_df,
+                    expert_id,
+                    current_participant_id,
+                    1,  # stage 1
+                    stage1_value,
+                    stage1_novelty
                 )
-                value_ratings.append(value)
-        
-        # Novelty ratings for all photos in row 1
-        st.subheader("Novelty Ratings for Photos 1-3:")
-        
-        # Get existing novelty values for photos 1-3
-        existing_novelties = []
-        for i in range(3):
-            photo_position = i + 1
-            existing_rating = ratings_df[
-                (ratings_df["expert_id"] == expert_id) &
-                (ratings_df["participant_id"] == current_participant_id) &
-                (ratings_df["photo_position"] == photo_position)
-            ]
-            if not existing_rating.empty:
-                existing_novelties.append(existing_rating["novelty"].values[0])
+                st.success("Ratings saved for Stage 1!")
             else:
-                existing_novelties.append(4)  # Default to middle value (4)
+                st.warning("Please provide all ratings for Stage 1.")
         
-        # Create columns for novelty ratings
-        novelty_cols = st.columns(3)
-        novelty_ratings = []
+        st.markdown("---")
         
-        for i in range(3):
-            with novelty_cols[i]:
-                novelty = st.select_slider(
-                    f"Photo {i+1} Novelty",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=existing_novelties[i],
-                    key=f"novelty_{current_participant_id}_{i+1}"
-                )
-                novelty_ratings.append(novelty)
-        
-        # Save button for first row photos
-        if st.button("Save Ratings for Photos 1-3"):
-            all_rated = all(v is not None and n is not None for v, n in zip(value_ratings, novelty_ratings))
-            if all_rated:
-                for i in range(3):
-                    ratings_df = save_or_update_ratings(
-                        ratings_df,
-                        expert_id,
-                        current_participant_id,
-                        i+1,
-                        value_ratings[i],
-                        novelty_ratings[i]
-                    )
-                st.success("Ratings saved for Photos 1-3!")
-            else:
-                st.warning("Please provide all ratings for Photos 1-3.")
-        
-        # Display second row of photos (4-6)
+        # Display second row of photos (4-6) - Stage 2
+        st.subheader("Stage 2")
         for i in range(3):
             photo_position = i + 4
             with row2_cols[i]:
@@ -266,96 +242,69 @@ if expert_id:
                 except:
                     st.error(f"Photo {photo_position} not found")
         
-        # Value ratings for all photos in row 2
-        st.subheader("Value Ratings for Photos 4-6:")
+        # Check for existing ratings for Stage 2
+        existing_stage2 = ratings_df[
+            (ratings_df["expert_id"] == expert_id) &
+            (ratings_df["participant_id"] == current_participant_id) &
+            (ratings_df["stage"] == 2)
+        ]
         
-        # Get existing values for photos 4-6
-        existing_values = []
-        for i in range(3):
-            photo_position = i + 4
-            existing_rating = ratings_df[
-                (ratings_df["expert_id"] == expert_id) &
-                (ratings_df["participant_id"] == current_participant_id) &
-                (ratings_df["photo_position"] == photo_position)
-            ]
-            if not existing_rating.empty:
-                existing_values.append(existing_rating["value"].values[0])
-            else:
-                existing_values.append(4)  # Default to middle value (4)
+        if not existing_stage2.empty:
+            stage2_value = existing_stage2["value"].values[0]
+            stage2_novelty = existing_stage2["novelty"].values[0]
+        else:
+            stage2_value = 4  # Default to middle value (4)
+            stage2_novelty = 4  # Default to middle value (4)
         
-        # Create columns for value ratings
-        value_cols_row2 = st.columns(3)
-        value_ratings_row2 = []
+        # One value rating for the entire row (Stage 2)
+        st.subheader("Value Rating for Stage 2:")
+        stage2_value = st.slider(
+            "Value",
+            min_value=1,
+            max_value=7,
+            value=stage2_value,
+            step=1,
+            key=f"value_{current_participant_id}_stage2"
+        )
         
-        for i in range(3):
-            with value_cols_row2[i]:
-                value = st.select_slider(
-                    f"Photo {i+4} Value",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=existing_values[i],
-                    key=f"value_{current_participant_id}_{i+4}"
+        # One novelty rating for the entire row (Stage 2)
+        st.subheader("Novelty Rating for Stage 2:")
+        stage2_novelty = st.slider(
+            "Novelty",
+            min_value=1,
+            max_value=7,
+            value=stage2_novelty,
+            step=1,
+            key=f"novelty_{current_participant_id}_stage2"
+        )
+        
+        # Save button for Stage 2
+        if st.button("Save Ratings for Stage 2"):
+            if stage2_value is not None and stage2_novelty is not None:
+                ratings_df = save_or_update_ratings(
+                    ratings_df,
+                    expert_id,
+                    current_participant_id,
+                    2,  # stage 2
+                    stage2_value,
+                    stage2_novelty
                 )
-                value_ratings_row2.append(value)
-        
-        # Novelty ratings for all photos in row 2
-        st.subheader("Novelty Ratings for Photos 4-6:")
-        
-        # Get existing novelty values for photos 4-6
-        existing_novelties = []
-        for i in range(3):
-            photo_position = i + 4
-            existing_rating = ratings_df[
-                (ratings_df["expert_id"] == expert_id) &
-                (ratings_df["participant_id"] == current_participant_id) &
-                (ratings_df["photo_position"] == photo_position)
-            ]
-            if not existing_rating.empty:
-                existing_novelties.append(existing_rating["novelty"].values[0])
+                st.success("Ratings saved for Stage 2!")
             else:
-                existing_novelties.append(4)  # Default to middle value (4)
-        
-        # Create columns for novelty ratings
-        novelty_cols_row2 = st.columns(3)
-        novelty_ratings_row2 = []
-        
-        for i in range(3):
-            with novelty_cols_row2[i]:
-                novelty = st.select_slider(
-                    f"Photo {i+4} Novelty",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=existing_novelties[i],
-                    key=f"novelty_{current_participant_id}_{i+4}"
-                )
-                novelty_ratings_row2.append(novelty)
-        
-        # Save button for second row photos
-        if st.button("Save Ratings for Photos 4-6"):
-            all_rated = all(v is not None and n is not None for v, n in zip(value_ratings_row2, novelty_ratings_row2))
-            if all_rated:
-                for i in range(3):
-                    ratings_df = save_or_update_ratings(
-                        ratings_df,
-                        expert_id,
-                        current_participant_id,
-                        i+4,
-                        value_ratings_row2[i],
-                        novelty_ratings_row2[i]
-                    )
-                st.success("Ratings saved for Photos 4-6!")
-            else:
-                st.warning("Please provide all ratings for Photos 4-6.")
+                st.warning("Please provide all ratings for Stage 2.")
         
         # Navigation buttons at the bottom
+        st.markdown("---")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("← Previous Participant"):
                 # Check if all ratings for current participant have been completed
                 all_ratings_provided = True
-                for photo_position in range(1, 7):
+                for stage in [1, 2]:
                     if len(ratings_df[
                         (ratings_df["expert_id"] == expert_id) &
                         (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["photo_position"] == photo_position)
+                        (ratings_df["stage"] == stage)
                     ]) == 0:
                         all_ratings_provided = False
                         break
@@ -368,17 +317,17 @@ if expert_id:
             if st.button("Next Participant →"):
                 # Check if all ratings for current participant have been completed
                 all_ratings_provided = True
-                for photo_position in range(1, 7):
+                for stage in [1, 2]:
                     if len(ratings_df[
                         (ratings_df["expert_id"] == expert_id) &
                         (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["photo_position"] == photo_position)
+                        (ratings_df["stage"] == stage)
                     ]) == 0:
                         all_ratings_provided = False
                         break
                 
                 if not all_ratings_provided:
-                    st.warning("Please rate all 6 photos before proceeding to the next participant.")
+                    st.warning("Please rate both stages before proceeding to the next participant.")
                 else:
                     if current_index < len(expert_order) - 1:
                         st.session_state["current_participant_index"] = current_index + 1
@@ -398,9 +347,3 @@ if expert_id:
             )
         else:
             st.sidebar.write("No data to download yet.")
-        
-        # Display a scrollable table showing expert progress
-        st.sidebar.markdown("### Expert Progress")
-        progress_df = ratings_df.groupby("expert_id").size().reset_index(name="photos_rated")
-        progress_df["photos_rated"] = progress_df["photos_rated"].astype(int)
-        st.sidebar.dataframe(progress_df.set_index("expert_id"), height=200)
