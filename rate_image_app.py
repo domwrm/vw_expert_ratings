@@ -6,9 +6,6 @@ import random
 # Set page config
 st.set_page_config(layout="wide", page_title="Chair Design Rating Tool")
 
-# Load participant data from JSON
-# participant_data = pd.read_json("participant_final_images.json").T
-
 # Function to load or create expert_ratings.csv
 def load_or_create_ratings():
     if os.path.exists("expert_ratings.csv"):
@@ -101,6 +98,12 @@ order_df, participant_ids = load_or_create_participant_order_csv()
 
 st.title("Chair Design Rating Tool")
 
+# Add rating scale legend at the top
+st.markdown("""
+    ### Rating Scale
+    **1: Strongly Disagree | 2: Disagree | 3: Slightly Disagree | 4: Neutral | 5: Slightly Agree | 6: Agree | 7: Strongly Agree**
+""")
+
 # Input for Expert ID on the sidebar
 st.sidebar.title("Expert ID")
 expert_id = st.sidebar.text_input("Enter your Expert ID (e.g., E1, E2, ...):")
@@ -166,117 +169,181 @@ if expert_id:
         row1_cols = st.columns(3)
         row2_cols = st.columns(3)
         
-        # Process first row (photos 1-3)
+        # Display first row of photos (1-3)
         for i in range(3):
             photo_position = i + 1
             with row1_cols[i]:
-                # Use screenshot from repo
                 try:
                     st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
                 except:
                     st.error(f"Photo {photo_position} not found")
-                
-                # Check for existing ratings
-                existing_rating = ratings_df[
-                    (ratings_df["expert_id"] == expert_id) &
-                    (ratings_df["participant_id"] == current_participant_id) &
-                    (ratings_df["photo_position"] == photo_position)
-                ]
-                
-                if not existing_rating.empty:
-                    value = existing_rating["value"].values[0]
-                    novelty = existing_rating["novelty"].values[0]
-                else:
-                    value = None
-                    novelty = None
-                
-                # Display rating widgets for this photo - one rating per row
-                st.markdown(f"<p class='rating-header'>Photo {photo_position} Ratings:</p>", unsafe_allow_html=True)
-                
-                value = st.select_slider(
-                    "Value",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=value,
-                    key=f"value_{current_participant_id}_{photo_position}"
-                )
-                
-                novelty = st.select_slider(
-                    "Novelty",
-                    options=[1, 2, 3, 4, 5, 6, 7],
-                    value=novelty,
-                    key=f"novelty_{current_participant_id}_{photo_position}"
-                )
-                
-                # Save button for this photo
-                if st.button("Save Ratings", key=f"save_{current_participant_id}_{photo_position}"):
-                    if value is not None and novelty is not None:
-                        ratings_df = save_or_update_ratings(
-                            ratings_df,
-                            expert_id,
-                            current_participant_id,
-                            photo_position,
-                            value,
-                            novelty
-                        )
-                        st.success(f"Ratings saved for Photo {photo_position}!")
-                    else:
-                        st.warning("Please provide ratings for both categories.")
         
-        # Process second row (photos 4-6)
+        # Value ratings for all photos in row 1
+        st.subheader("Value Ratings for Photos 1-3:")
+        
+        # Get existing values for photos 1-3
+        existing_values = []
+        for i in range(3):
+            photo_position = i + 1
+            existing_rating = ratings_df[
+                (ratings_df["expert_id"] == expert_id) &
+                (ratings_df["participant_id"] == current_participant_id) &
+                (ratings_df["photo_position"] == photo_position)
+            ]
+            if not existing_rating.empty:
+                existing_values.append(existing_rating["value"].values[0])
+            else:
+                existing_values.append(4)  # Default to middle value (4)
+        
+        # Create columns for value ratings
+        value_cols = st.columns(3)
+        value_ratings = []
+        
+        for i in range(3):
+            with value_cols[i]:
+                value = st.select_slider(
+                    f"Photo {i+1} Value",
+                    options=[1, 2, 3, 4, 5, 6, 7],
+                    value=existing_values[i],
+                    key=f"value_{current_participant_id}_{i+1}"
+                )
+                value_ratings.append(value)
+        
+        # Novelty ratings for all photos in row 1
+        st.subheader("Novelty Ratings for Photos 1-3:")
+        
+        # Get existing novelty values for photos 1-3
+        existing_novelties = []
+        for i in range(3):
+            photo_position = i + 1
+            existing_rating = ratings_df[
+                (ratings_df["expert_id"] == expert_id) &
+                (ratings_df["participant_id"] == current_participant_id) &
+                (ratings_df["photo_position"] == photo_position)
+            ]
+            if not existing_rating.empty:
+                existing_novelties.append(existing_rating["novelty"].values[0])
+            else:
+                existing_novelties.append(4)  # Default to middle value (4)
+        
+        # Create columns for novelty ratings
+        novelty_cols = st.columns(3)
+        novelty_ratings = []
+        
+        for i in range(3):
+            with novelty_cols[i]:
+                novelty = st.select_slider(
+                    f"Photo {i+1} Novelty",
+                    options=[1, 2, 3, 4, 5, 6, 7],
+                    value=existing_novelties[i],
+                    key=f"novelty_{current_participant_id}_{i+1}"
+                )
+                novelty_ratings.append(novelty)
+        
+        # Save button for first row photos
+        if st.button("Save Ratings for Photos 1-3"):
+            all_rated = all(v is not None and n is not None for v, n in zip(value_ratings, novelty_ratings))
+            if all_rated:
+                for i in range(3):
+                    ratings_df = save_or_update_ratings(
+                        ratings_df,
+                        expert_id,
+                        current_participant_id,
+                        i+1,
+                        value_ratings[i],
+                        novelty_ratings[i]
+                    )
+                st.success("Ratings saved for Photos 1-3!")
+            else:
+                st.warning("Please provide all ratings for Photos 1-3.")
+        
+        # Display second row of photos (4-6)
         for i in range(3):
             photo_position = i + 4
             with row2_cols[i]:
-                # Use screenshot from repo
                 try:
                     st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
                 except:
                     st.error(f"Photo {photo_position} not found")
-                
-                # Check for existing ratings
-                existing_rating = ratings_df[
-                    (ratings_df["expert_id"] == expert_id) &
-                    (ratings_df["participant_id"] == current_participant_id) &
-                    (ratings_df["photo_position"] == photo_position)
-                ]
-                
-                if not existing_rating.empty:
-                    value = existing_rating["value"].values[0]
-                    novelty = existing_rating["novelty"].values[0]
-                else:
-                    value = None
-                    novelty = None
-                
-                # Display rating widgets for this photo - one rating per row
-                st.markdown(f"<p class='rating-header'>Photo {photo_position} Ratings:</p>", unsafe_allow_html=True)
-                
+        
+        # Value ratings for all photos in row 2
+        st.subheader("Value Ratings for Photos 4-6:")
+        
+        # Get existing values for photos 4-6
+        existing_values = []
+        for i in range(3):
+            photo_position = i + 4
+            existing_rating = ratings_df[
+                (ratings_df["expert_id"] == expert_id) &
+                (ratings_df["participant_id"] == current_participant_id) &
+                (ratings_df["photo_position"] == photo_position)
+            ]
+            if not existing_rating.empty:
+                existing_values.append(existing_rating["value"].values[0])
+            else:
+                existing_values.append(4)  # Default to middle value (4)
+        
+        # Create columns for value ratings
+        value_cols_row2 = st.columns(3)
+        value_ratings_row2 = []
+        
+        for i in range(3):
+            with value_cols_row2[i]:
                 value = st.select_slider(
-                    "Value",
+                    f"Photo {i+4} Value",
                     options=[1, 2, 3, 4, 5, 6, 7],
-                    value=value,
-                    key=f"value_{current_participant_id}_{photo_position}"
+                    value=existing_values[i],
+                    key=f"value_{current_participant_id}_{i+4}"
                 )
-                
+                value_ratings_row2.append(value)
+        
+        # Novelty ratings for all photos in row 2
+        st.subheader("Novelty Ratings for Photos 4-6:")
+        
+        # Get existing novelty values for photos 4-6
+        existing_novelties = []
+        for i in range(3):
+            photo_position = i + 4
+            existing_rating = ratings_df[
+                (ratings_df["expert_id"] == expert_id) &
+                (ratings_df["participant_id"] == current_participant_id) &
+                (ratings_df["photo_position"] == photo_position)
+            ]
+            if not existing_rating.empty:
+                existing_novelties.append(existing_rating["novelty"].values[0])
+            else:
+                existing_novelties.append(4)  # Default to middle value (4)
+        
+        # Create columns for novelty ratings
+        novelty_cols_row2 = st.columns(3)
+        novelty_ratings_row2 = []
+        
+        for i in range(3):
+            with novelty_cols_row2[i]:
                 novelty = st.select_slider(
-                    "Novelty",
+                    f"Photo {i+4} Novelty",
                     options=[1, 2, 3, 4, 5, 6, 7],
-                    value=novelty,
-                    key=f"novelty_{current_participant_id}_{photo_position}"
+                    value=existing_novelties[i],
+                    key=f"novelty_{current_participant_id}_{i+4}"
                 )
-                
-                # Save button for this photo
-                if st.button("Save Ratings", key=f"save_{current_participant_id}_{photo_position}"):
-                    if value is not None and novelty is not None:
-                        ratings_df = save_or_update_ratings(
-                            ratings_df,
-                            expert_id,
-                            current_participant_id,
-                            photo_position,
-                            value,
-                            novelty
-                        )
-                        st.success(f"Ratings saved for Photo {photo_position}!")
-                    else:
-                        st.warning("Please provide ratings for both categories.")
+                novelty_ratings_row2.append(novelty)
+        
+        # Save button for second row photos
+        if st.button("Save Ratings for Photos 4-6"):
+            all_rated = all(v is not None and n is not None for v, n in zip(value_ratings_row2, novelty_ratings_row2))
+            if all_rated:
+                for i in range(3):
+                    ratings_df = save_or_update_ratings(
+                        ratings_df,
+                        expert_id,
+                        current_participant_id,
+                        i+4,
+                        value_ratings_row2[i],
+                        novelty_ratings_row2[i]
+                    )
+                st.success("Ratings saved for Photos 4-6!")
+            else:
+                st.warning("Please provide all ratings for Photos 4-6.")
         
         # Navigation buttons at the bottom
         col1, col2 = st.columns(2)
@@ -318,11 +385,6 @@ if expert_id:
                         st.experimental_rerun()
                     else:
                         st.success("You have completed ratings for all participants!")
-
-        # Display rating scale legend
-        st.markdown("---")
-        st.markdown("### Rating Scale")
-        st.markdown("**1: Strongly Disagree | 2: Disagree | 3: Slightly Disagree | 4: Neutral | 5: Slightly Agree | 6: Agree | 7: Strongly Agree**")
         
         # Add a download button for the CSV file at the bottom of the sidebar
         st.sidebar.markdown("---")
