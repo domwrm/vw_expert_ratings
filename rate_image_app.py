@@ -10,6 +10,9 @@ st.set_page_config(layout="wide", page_title="Chair Design Rating Tool")
 def load_or_create_ratings():
     if os.path.exists("expert_ratings.csv"):
         ratings_df = pd.read_csv("expert_ratings.csv")
+        # Ensure the stage column exists
+        if "stage" not in ratings_df.columns:
+            ratings_df["stage"] = 1  # Default value
     else:
         ratings_df = pd.DataFrame(
             columns=[
@@ -59,17 +62,16 @@ def get_or_create_participant_order(expert_id, participant_ids, order_df):
 def save_participant_order_csv(order_df):
     order_df.to_csv("expert_orders.csv", index=False)
 
-# Function to save or update ratings
-def save_or_update_ratings(
-    ratings_df, expert_id, participant_id, stage, value, novelty
-):
+# Function to save or update ratings for stage 1
+def save_stage1_ratings(ratings_df, expert_id, participant_id, value, novelty):
+    # Look for existing rating for this expert, participant and stage 1
     existing_rating = ratings_df[
         (ratings_df["expert_id"] == expert_id) & 
         (ratings_df["participant_id"] == participant_id) & 
-        (ratings_df["stage"] == stage)
+        (ratings_df["stage"] == 1)
     ]
     
-    if not existing_rating.empty:
+    if len(existing_rating) > 0:
         # Update existing rating
         ratings_df.loc[
             existing_rating.index,
@@ -77,16 +79,48 @@ def save_or_update_ratings(
         ] = [value, novelty]
     else:
         # Append new rating
-        new_ratings = pd.DataFrame(
+        new_rating = pd.DataFrame(
             {
                 "expert_id": [expert_id],
                 "participant_id": [participant_id],
-                "stage": [stage],
+                "stage": [1],
                 "value": [value],
                 "novelty": [novelty],
             }
         )
-        ratings_df = pd.concat([ratings_df, new_ratings], ignore_index=True)
+        ratings_df = pd.concat([ratings_df, new_rating], ignore_index=True)
+    
+    save_ratings(ratings_df)
+    return ratings_df
+
+# Function to save or update ratings for stage 2
+def save_stage2_ratings(ratings_df, expert_id, participant_id, value, novelty):
+    # Look for existing rating for this expert, participant and stage 2
+    existing_rating = ratings_df[
+        (ratings_df["expert_id"] == expert_id) & 
+        (ratings_df["participant_id"] == participant_id) & 
+        (ratings_df["stage"] == 2)
+    ]
+    
+    if len(existing_rating) > 0:
+        # Update existing rating
+        ratings_df.loc[
+            existing_rating.index,
+            ["value", "novelty"],
+        ] = [value, novelty]
+    else:
+        # Append new rating
+        new_rating = pd.DataFrame(
+            {
+                "expert_id": [expert_id],
+                "participant_id": [participant_id],
+                "stage": [2],
+                "value": [value],
+                "novelty": [novelty],
+            }
+        )
+        ratings_df = pd.concat([ratings_df, new_rating], ignore_index=True)
+    
     save_ratings(ratings_df)
     return ratings_df
 
@@ -175,20 +209,20 @@ if expert_id:
             photo_position = i + 1
             with row1_cols[i]:
                 try:
-                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
+                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_container_width=True)
                 except:
                     st.error(f"Photo {photo_position} not found")
         
         # Check for existing ratings for Stage 1
-        existing_stage1 = ratings_df[
+        stage1_ratings = ratings_df[
             (ratings_df["expert_id"] == expert_id) &
             (ratings_df["participant_id"] == current_participant_id) &
             (ratings_df["stage"] == 1)
         ]
         
-        if not existing_stage1.empty:
-            stage1_value = existing_stage1["value"].values[0]
-            stage1_novelty = existing_stage1["novelty"].values[0]
+        if len(stage1_ratings) > 0:
+            stage1_value = stage1_ratings["value"].values[0]
+            stage1_novelty = stage1_ratings["novelty"].values[0]
         else:
             stage1_value = 4  # Default to middle value (4)
             stage1_novelty = 4  # Default to middle value (4)
@@ -199,7 +233,7 @@ if expert_id:
             "Value",
             min_value=1,
             max_value=7,
-            value=stage1_value,
+            value=int(stage1_value),
             step=1,
             key=f"value_{current_participant_id}_stage1"
         )
@@ -210,25 +244,21 @@ if expert_id:
             "Novelty",
             min_value=1,
             max_value=7,
-            value=stage1_novelty,
+            value=int(stage1_novelty),
             step=1,
             key=f"novelty_{current_participant_id}_stage1"
         )
         
         # Save button for Stage 1
         if st.button("Save Ratings for Stage 1"):
-            if stage1_value is not None and stage1_novelty is not None:
-                ratings_df = save_or_update_ratings(
-                    ratings_df,
-                    expert_id,
-                    current_participant_id,
-                    1,  # stage 1
-                    stage1_value,
-                    stage1_novelty
-                )
-                st.success("Ratings saved for Stage 1!")
-            else:
-                st.warning("Please provide all ratings for Stage 1.")
+            ratings_df = save_stage1_ratings(
+                ratings_df,
+                expert_id,
+                current_participant_id,
+                stage1_value,
+                stage1_novelty
+            )
+            st.success("Ratings saved for Stage 1!")
         
         st.markdown("---")
         
@@ -238,20 +268,20 @@ if expert_id:
             photo_position = i + 4
             with row2_cols[i]:
                 try:
-                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_column_width=True)
+                    st.image("screenshot.png", caption=f"Photo {photo_position}", use_container_width=True)
                 except:
                     st.error(f"Photo {photo_position} not found")
         
         # Check for existing ratings for Stage 2
-        existing_stage2 = ratings_df[
+        stage2_ratings = ratings_df[
             (ratings_df["expert_id"] == expert_id) &
             (ratings_df["participant_id"] == current_participant_id) &
             (ratings_df["stage"] == 2)
         ]
         
-        if not existing_stage2.empty:
-            stage2_value = existing_stage2["value"].values[0]
-            stage2_novelty = existing_stage2["novelty"].values[0]
+        if len(stage2_ratings) > 0:
+            stage2_value = stage2_ratings["value"].values[0]
+            stage2_novelty = stage2_ratings["novelty"].values[0]
         else:
             stage2_value = 4  # Default to middle value (4)
             stage2_novelty = 4  # Default to middle value (4)
@@ -262,7 +292,7 @@ if expert_id:
             "Value",
             min_value=1,
             max_value=7,
-            value=stage2_value,
+            value=int(stage2_value),
             step=1,
             key=f"value_{current_participant_id}_stage2"
         )
@@ -273,60 +303,47 @@ if expert_id:
             "Novelty",
             min_value=1,
             max_value=7,
-            value=stage2_novelty,
+            value=int(stage2_novelty),
             step=1,
             key=f"novelty_{current_participant_id}_stage2"
         )
         
         # Save button for Stage 2
         if st.button("Save Ratings for Stage 2"):
-            if stage2_value is not None and stage2_novelty is not None:
-                ratings_df = save_or_update_ratings(
-                    ratings_df,
-                    expert_id,
-                    current_participant_id,
-                    2,  # stage 2
-                    stage2_value,
-                    stage2_novelty
-                )
-                st.success("Ratings saved for Stage 2!")
-            else:
-                st.warning("Please provide all ratings for Stage 2.")
+            ratings_df = save_stage2_ratings(
+                ratings_df,
+                expert_id,
+                current_participant_id,
+                stage2_value,
+                stage2_novelty
+            )
+            st.success("Ratings saved for Stage 2!")
         
         # Navigation buttons at the bottom
         st.markdown("---")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("← Previous Participant"):
-                # Check if all ratings for current participant have been completed
-                all_ratings_provided = True
-                for stage in [1, 2]:
-                    if len(ratings_df[
-                        (ratings_df["expert_id"] == expert_id) &
-                        (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["stage"] == stage)
-                    ]) == 0:
-                        all_ratings_provided = False
-                        break
-                
-                if all_ratings_provided or st.session_state["current_participant_index"] > 0:
-                    st.session_state["current_participant_index"] = max(0, current_index - 1)
+                if current_index > 0:
+                    st.session_state["current_participant_index"] = current_index - 1
                     st.experimental_rerun()
         
         with col2:
             if st.button("Next Participant →"):
-                # Check if all ratings for current participant have been completed
-                all_ratings_provided = True
-                for stage in [1, 2]:
-                    if len(ratings_df[
-                        (ratings_df["expert_id"] == expert_id) &
-                        (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["stage"] == stage)
-                    ]) == 0:
-                        all_ratings_provided = False
-                        break
+                # Check if both stages for current participant have been rated
+                stage1_rated = len(ratings_df[
+                    (ratings_df["expert_id"] == expert_id) &
+                    (ratings_df["participant_id"] == current_participant_id) &
+                    (ratings_df["stage"] == 1)
+                ]) > 0
                 
-                if not all_ratings_provided:
+                stage2_rated = len(ratings_df[
+                    (ratings_df["expert_id"] == expert_id) &
+                    (ratings_df["participant_id"] == current_participant_id) &
+                    (ratings_df["stage"] == 2)
+                ]) > 0
+                
+                if not (stage1_rated and stage2_rated):
                     st.warning("Please rate both stages before proceeding to the next participant.")
                 else:
                     if current_index < len(expert_order) - 1:
