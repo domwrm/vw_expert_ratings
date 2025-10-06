@@ -54,11 +54,15 @@ def load_or_create_participant_order_csv(participant_ids):
 
 # Function to get or create the randomized order for an expert
 def get_or_create_participant_order(expert_id, participant_ids, order_df):
+    # Return empty list if no participant IDs are available
+    if not participant_ids:
+        return [], order_df
+        
     if expert_id in order_df["expert_id"].values:
         # Load existing order
         expert_order = order_df[order_df["expert_id"] == expert_id].iloc[0, 1:].tolist()
-        # Filter to only include existing participant IDs
-        expert_order = [p for p in expert_order if p in participant_ids]
+        # Filter to only include existing participant IDs and remove NaN values
+        expert_order = [str(p) for p in expert_order if str(p) != 'nan' and str(p) in participant_ids]
     else:
         # Create a new randomized order
         expert_order = participant_ids.copy()
@@ -127,6 +131,9 @@ if not participant_ids:
         "8080071", "8412880", "8463739", "8506151", "8757727", "8910228"
     ]
 
+# Convert all participant IDs to strings to avoid type issues
+participant_ids = [str(pid) for pid in participant_ids]
+
 # Load or create expert ratings
 ratings_df = load_or_create_ratings()
 
@@ -155,6 +162,11 @@ if expert_id:
         expert_order, order_df = get_or_create_participant_order(
             expert_id, participant_ids, order_df
         )
+        
+        # Check if expert_order is empty
+        if not expert_order:
+            st.error("No participants found. Please check your imgs directory structure.")
+            st.stop()
         
         # Initialize session state for current participant index
         if "current_participant_index" not in st.session_state:
