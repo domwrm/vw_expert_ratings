@@ -240,7 +240,7 @@ if expert_id:
         for i, (image_path, col) in enumerate(zip(stage1_images[:3], [col1, col2, col3])):
             with col:
                 try:
-                    st.image(image_path, caption=f"Phase 1 - Image {i+1}", use_column_width=True)
+                    st.image(image_path, caption=f"Phase 1 - Image {i+1}", use_container_width=True)
                 except:
                     st.error(f"Could not load image {image_path}")
         
@@ -255,7 +255,7 @@ if expert_id:
         phase1_novelty = 4 if len(existing_phase1_rating) == 0 else int(existing_phase1_rating["novelty"].values[0])
         
         # Value slider spanning full width
-        st.markdown('<p class="small-text">Phase 1 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+        st.markdown('<p class="small-text">Value: How well does this final image meet the client\'s requirements?</p>', unsafe_allow_html=True)
         phase1_value_rating = st.slider(
             "Phase 1 Value",
             min_value=1,
@@ -267,7 +267,7 @@ if expert_id:
         )
         
         # Novelty slider spanning full width
-        st.markdown('<p class="small-text">Phase 1 Novelty: How innovative?</p>', unsafe_allow_html=True)
+        st.markdown('<p class="small-text">Novelty: How innovative is this chair design?</p>', unsafe_allow_html=True)
         phase1_novelty_rating = st.slider(
             "Phase 1 Novelty",
             min_value=1,
@@ -316,7 +316,7 @@ if expert_id:
         for i, (image_path, col) in enumerate(zip(stage2_images[:3], [col1, col2, col3])):
             with col:
                 try:
-                    st.image(image_path, caption=f"Phase 2 - Image {i+1}", use_column_width=True)
+                    st.image(image_path, caption=f"Phase 2 - Image {i+1}", use_container_width=True)
                 except:
                     st.error(f"Could not load image {image_path}")
         
@@ -331,7 +331,7 @@ if expert_id:
         phase2_novelty = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["novelty"].values[0])
         
         # Value slider spanning full width
-        st.markdown('<p class="small-text">Phase 2 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+        st.markdown('<p class="small-text">Value: How well does this final image meet the client's requirements?</p>', unsafe_allow_html=True)
         phase2_value_rating = st.slider(
             "Phase 2 Value",
             min_value=1,
@@ -343,7 +343,7 @@ if expert_id:
         )
         
         # Novelty slider spanning full width
-        st.markdown('<p class="small-text">Phase 2 Novelty: How innovative?</p>', unsafe_allow_html=True)
+        st.markdown('<p class="small-text">Novelty: How innovative is this chair design?</p>', unsafe_allow_html=True)
         phase2_novelty_rating = st.slider(
             "Phase 2 Novelty",
             min_value=1,
