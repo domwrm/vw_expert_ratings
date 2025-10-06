@@ -21,8 +21,6 @@ def load_or_create_ratings():
     if os.path.exists("expert_ratings.csv"):
         ratings_df = pd.read_csv("expert_ratings.csv")
         # Ensure required columns exist
-        if "image_id" not in ratings_df.columns:
-            ratings_df["image_id"] = ""
         if "stage" not in ratings_df.columns:
             ratings_df["stage"] = 1  # Default value
     else:
@@ -30,7 +28,6 @@ def load_or_create_ratings():
             columns=[
                 "expert_id",
                 "participant_id",
-                "image_id",
                 "stage",
                 "value",
                 "novelty",
@@ -88,13 +85,12 @@ def get_image_paths(participant_id, stage):
     else:
         return []
 
-# Function to save or update individual image rating
-def save_image_rating(ratings_df, expert_id, participant_id, image_id, stage, value, novelty):
-    # Look for existing rating for this expert, participant, image, and stage
+# Function to save or update phase rating (one rating per phase)
+def save_phase_rating(ratings_df, expert_id, participant_id, stage, value, novelty):
+    # Look for existing rating for this expert, participant, and stage
     existing_rating = ratings_df[
         (ratings_df["expert_id"] == expert_id) & 
         (ratings_df["participant_id"] == participant_id) &
-        (ratings_df["image_id"] == image_id) &
         (ratings_df["stage"] == stage)
     ]
     
@@ -110,7 +106,6 @@ def save_image_rating(ratings_df, expert_id, participant_id, image_id, stage, va
             {
                 "expert_id": [expert_id],
                 "participant_id": [participant_id],
-                "image_id": [image_id],
                 "stage": [stage],
                 "value": [value],
                 "novelty": [novelty],
@@ -208,190 +203,158 @@ if expert_id:
         
         st.header(f"Participant ID: {current_participant_id}")
         
-        # Create tabs for Stage 1 and Stage 2
-        tab1, tab2 = st.tabs(["Stage 1 (Phase 1)", "Stage 2 (Phase 2)"])
+        # Display both phases in a single view
+        # Phase 1 Section
+        st.subheader("Phase 1 Images")
+        stage1_images = get_image_paths(current_participant_id, 1)
         
-        # Stage 1 Tab
-        with tab1:
-            # Get Stage 1 image paths
-            stage1_images = get_image_paths(current_participant_id, 1)
-            
-            if not stage1_images:
-                st.warning(f"No images found for Participant {current_participant_id} in Stage 1.")
-                # Use placeholder image if no images found
-                stage1_images = ["screenshot.png"] * 3
-            
-            # Make sure we have at least 3 images (or use duplicates if needed)
-            while len(stage1_images) < 3:
-                stage1_images.append(stage1_images[0] if stage1_images else "screenshot.png")
-            
-            # Randomly select 3 images if there are more than 3
-            if len(stage1_images) > 3:
-                # Check if we've already selected images for this participant and stage
-                if f"stage1_images_{current_participant_id}" not in st.session_state:
-                    selected_images = random.sample(stage1_images, 3)
-                    st.session_state[f"stage1_images_{current_participant_id}"] = selected_images
-                stage1_images = st.session_state[f"stage1_images_{current_participant_id}"]
-            
-            # Display images in a 3-column layout
-            st.subheader("Phase 1 Images")
-            col1, col2, col3 = st.columns(3)
-            
-            # Display each image with its own rating controls
-            for i, (image_path, col) in enumerate(zip(stage1_images[:3], [col1, col2, col3])):
-                with col:
-                    # Extract image name from path
-                    image_name = os.path.basename(image_path)
-                    
-                    # Display image
-                    try:
-                        st.image(image_path, caption=f"Image {i+1}", use_column_width=True)
-                    except:
-                        st.error(f"Could not load image {image_path}")
-                        continue
-                    
-                    # Check for existing ratings
-                    existing_rating = ratings_df[
-                        (ratings_df["expert_id"] == expert_id) &
-                        (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["image_id"] == image_name) &
-                        (ratings_df["stage"] == 1)
-                    ]
-                    
-                    if len(existing_rating) > 0:
-                        value = existing_rating["value"].values[0]
-                        novelty = existing_rating["novelty"].values[0]
-                    else:
-                        value = 4  # Default middle value
-                        novelty = 4  # Default middle value
-                    
-                    # Value rating for this image
-                    st.markdown('<p class="small-text">Value: Meets client requirements?</p>', unsafe_allow_html=True)
-                    value_rating = st.slider(
-                        f"Value {i+1}",
-                        min_value=1,
-                        max_value=7,
-                        value=int(value),
-                        step=1,
-                        key=f"value_stage1_{current_participant_id}_{i}",
-                        label_visibility="collapsed"
-                    )
-                    
-                    # Novelty rating for this image
-                    st.markdown('<p class="small-text">Novelty: How innovative?</p>', unsafe_allow_html=True)
-                    novelty_rating = st.slider(
-                        f"Novelty {i+1}",
-                        min_value=1,
-                        max_value=7,
-                        value=int(novelty),
-                        step=1,
-                        key=f"novelty_stage1_{current_participant_id}_{i}",
-                        label_visibility="collapsed"
-                    )
-                    
-                    # Save button for this image
-                    if st.button(f"Save Ratings for Image {i+1}", key=f"save_stage1_{current_participant_id}_{i}"):
-                        ratings_df = save_image_rating(
-                            ratings_df,
-                            expert_id,
-                            current_participant_id,
-                            image_name,
-                            1,
-                            value_rating,
-                            novelty_rating
-                        )
-                        st.success(f"Ratings saved for Image {i+1}!")
+        if not stage1_images:
+            st.warning(f"No images found for Participant {current_participant_id} in Phase 1.")
+            stage1_images = ["screenshot.png"] * 3
         
-        # Stage 2 Tab
-        with tab2:
-            # Get Stage 2 image paths
-            stage2_images = get_image_paths(current_participant_id, 2)
-            
-            if not stage2_images:
-                st.warning(f"No images found for Participant {current_participant_id} in Stage 2.")
-                # Use placeholder image if no images found
-                stage2_images = ["screenshot.png"] * 3
-            
-            # Make sure we have at least 3 images (or use duplicates if needed)
-            while len(stage2_images) < 3:
-                stage2_images.append(stage2_images[0] if stage2_images else "screenshot.png")
-            
-            # Randomly select 3 images if there are more than 3
-            if len(stage2_images) > 3:
-                # Check if we've already selected images for this participant and stage
-                if f"stage2_images_{current_participant_id}" not in st.session_state:
-                    selected_images = random.sample(stage2_images, 3)
-                    st.session_state[f"stage2_images_{current_participant_id}"] = selected_images
-                stage2_images = st.session_state[f"stage2_images_{current_participant_id}"]
-            
-            # Display images in a 3-column layout
-            st.subheader("Phase 2 Images")
-            col1, col2, col3 = st.columns(3)
-            
-            # Display each image with its own rating controls
-            for i, (image_path, col) in enumerate(zip(stage2_images[:3], [col1, col2, col3])):
-                with col:
-                    # Extract image name from path
-                    image_name = os.path.basename(image_path)
-                    
-                    # Display image
-                    try:
-                        st.image(image_path, caption=f"Image {i+1}", use_column_width=True)
-                    except:
-                        st.error(f"Could not load image {image_path}")
-                        continue
-                    
-                    # Check for existing ratings
-                    existing_rating = ratings_df[
-                        (ratings_df["expert_id"] == expert_id) &
-                        (ratings_df["participant_id"] == current_participant_id) &
-                        (ratings_df["image_id"] == image_name) &
-                        (ratings_df["stage"] == 2)
-                    ]
-                    
-                    if len(existing_rating) > 0:
-                        value = existing_rating["value"].values[0]
-                        novelty = existing_rating["novelty"].values[0]
-                    else:
-                        value = 4  # Default middle value
-                        novelty = 4  # Default middle value
-                    
-                    # Value rating for this image
-                    st.markdown('<p class="small-text">Value: Meets client requirements?</p>', unsafe_allow_html=True)
-                    value_rating = st.slider(
-                        f"Value {i+1}",
-                        min_value=1,
-                        max_value=7,
-                        value=int(value),
-                        step=1,
-                        key=f"value_stage2_{current_participant_id}_{i}",
-                        label_visibility="collapsed"
-                    )
-                    
-                    # Novelty rating for this image
-                    st.markdown('<p class="small-text">Novelty: How innovative?</p>', unsafe_allow_html=True)
-                    novelty_rating = st.slider(
-                        f"Novelty {i+1}",
-                        min_value=1,
-                        max_value=7,
-                        value=int(novelty),
-                        step=1,
-                        key=f"novelty_stage2_{current_participant_id}_{i}",
-                        label_visibility="collapsed"
-                    )
-                    
-                    # Save button for this image
-                    if st.button(f"Save Ratings for Image {i+1}", key=f"save_stage2_{current_participant_id}_{i}"):
-                        ratings_df = save_image_rating(
-                            ratings_df,
-                            expert_id,
-                            current_participant_id,
-                            image_name,
-                            2,
-                            value_rating,
-                            novelty_rating
-                        )
-                        st.success(f"Ratings saved for Image {i+1}!")
+        # Make sure we have at least 3 images (or use duplicates if needed)
+        while len(stage1_images) < 3:
+            stage1_images.append(stage1_images[0] if stage1_images else "screenshot.png")
+        
+        # Randomly select 3 images if there are more than 3
+        if len(stage1_images) > 3:
+            if f"stage1_images_{current_participant_id}" not in st.session_state:
+                selected_images = random.sample(stage1_images, 3)
+                st.session_state[f"stage1_images_{current_participant_id}"] = selected_images
+            stage1_images = st.session_state[f"stage1_images_{current_participant_id}"]
+        
+        # Display Phase 1 images in a 3-column layout
+        col1, col2, col3 = st.columns(3)
+        for i, (image_path, col) in enumerate(zip(stage1_images[:3], [col1, col2, col3])):
+            with col:
+                try:
+                    st.image(image_path, caption=f"Phase 1 - Image {i+1}", use_column_width=True)
+                except:
+                    st.error(f"Could not load image {image_path}")
+        
+        # Phase 1 Ratings (single rating for the entire phase)
+        existing_phase1_rating = ratings_df[
+            (ratings_df["expert_id"] == expert_id) &
+            (ratings_df["participant_id"] == current_participant_id) &
+            (ratings_df["stage"] == 1)
+        ]
+        
+        phase1_value = 4 if len(existing_phase1_rating) == 0 else int(existing_phase1_rating["value"].values[0])
+        phase1_novelty = 4 if len(existing_phase1_rating) == 0 else int(existing_phase1_rating["novelty"].values[0])
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.markdown('<p class="small-text">Phase 1 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+            phase1_value_rating = st.slider(
+                "Phase 1 Value",
+                min_value=1,
+                max_value=7,
+                value=phase1_value,
+                step=1,
+                key=f"value_phase1_{current_participant_id}",
+                label_visibility="collapsed"
+            )
+        
+        with col2:
+            st.markdown('<p class="small-text">Phase 1 Novelty: How innovative?</p>', unsafe_allow_html=True)
+            phase1_novelty_rating = st.slider(
+                "Phase 1 Novelty",
+                min_value=1,
+                max_value=7,
+                value=phase1_novelty,
+                step=1,
+                key=f"novelty_phase1_{current_participant_id}",
+                label_visibility="collapsed"
+            )
+        
+        with col3:
+            if st.button("Save Phase 1 Ratings", key=f"save_phase1_{current_participant_id}"):
+                ratings_df = save_phase_rating(
+                    ratings_df,
+                    expert_id,
+                    current_participant_id,
+                    1,
+                    phase1_value_rating,
+                    phase1_novelty_rating
+                )
+                st.success("Phase 1 ratings saved!")
+        
+        st.markdown("---")
+        
+        # Phase 2 Section
+        st.subheader("Phase 2 Images")
+        stage2_images = get_image_paths(current_participant_id, 2)
+        
+        if not stage2_images:
+            st.warning(f"No images found for Participant {current_participant_id} in Phase 2.")
+            stage2_images = ["screenshot.png"] * 3
+        
+        # Make sure we have at least 3 images (or use duplicates if needed)
+        while len(stage2_images) < 3:
+            stage2_images.append(stage2_images[0] if stage2_images else "screenshot.png")
+        
+        # Randomly select 3 images if there are more than 3
+        if len(stage2_images) > 3:
+            if f"stage2_images_{current_participant_id}" not in st.session_state:
+                selected_images = random.sample(stage2_images, 3)
+                st.session_state[f"stage2_images_{current_participant_id}"] = selected_images
+            stage2_images = st.session_state[f"stage2_images_{current_participant_id}"]
+        
+        # Display Phase 2 images in a 3-column layout
+        col1, col2, col3 = st.columns(3)
+        for i, (image_path, col) in enumerate(zip(stage2_images[:3], [col1, col2, col3])):
+            with col:
+                try:
+                    st.image(image_path, caption=f"Phase 2 - Image {i+1}", use_column_width=True)
+                except:
+                    st.error(f"Could not load image {image_path}")
+        
+        # Phase 2 Ratings (single rating for the entire phase)
+        existing_phase2_rating = ratings_df[
+            (ratings_df["expert_id"] == expert_id) &
+            (ratings_df["participant_id"] == current_participant_id) &
+            (ratings_df["stage"] == 2)
+        ]
+        
+        phase2_value = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["value"].values[0])
+        phase2_novelty = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["novelty"].values[0])
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            st.markdown('<p class="small-text">Phase 2 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+            phase2_value_rating = st.slider(
+                "Phase 2 Value",
+                min_value=1,
+                max_value=7,
+                value=phase2_value,
+                step=1,
+                key=f"value_phase2_{current_participant_id}",
+                label_visibility="collapsed"
+            )
+        
+        with col2:
+            st.markdown('<p class="small-text">Phase 2 Novelty: How innovative?</p>', unsafe_allow_html=True)
+            phase2_novelty_rating = st.slider(
+                "Phase 2 Novelty",
+                min_value=1,
+                max_value=7,
+                value=phase2_novelty,
+                step=1,
+                key=f"novelty_phase2_{current_participant_id}",
+                label_visibility="collapsed"
+            )
+        
+        with col3:
+            if st.button("Save Phase 2 Ratings", key=f"save_phase2_{current_participant_id}"):
+                ratings_df = save_phase_rating(
+                    ratings_df,
+                    expert_id,
+                    current_participant_id,
+                    2,
+                    phase2_value_rating,
+                    phase2_novelty_rating
+                )
+                st.success("Phase 2 ratings saved!")
         
         # Navigation buttons at the bottom
         st.markdown("---")
