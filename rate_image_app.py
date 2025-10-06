@@ -331,7 +331,7 @@ if expert_id:
         phase2_novelty = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["novelty"].values[0])
         
         # Value slider spanning full width
-        st.markdown('<p class="small-text">Value: How well does this final image meet the client's requirements?</p>', unsafe_allow_html=True)
+        st.markdown('<p class="small-text">Value: How well does this final image meet the client\'s requirements?</p>', unsafe_allow_html=True)
         phase2_value_rating = st.slider(
             "Phase 2 Value",
             min_value=1,
