@@ -373,13 +373,13 @@ if expert_id:
             if st.button("← Previous Participant"):
                 if current_index > 0:
                     st.session_state["current_participant_index"] = current_index - 1
-                    st.experimental_rerun()
+                    st.rerun()
         
         with col2:
             if st.button("Next Participant →"):
                 if current_index < len(expert_order) - 1:
                     st.session_state["current_participant_index"] = current_index + 1
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.success("You have completed ratings for all participants!")
         
