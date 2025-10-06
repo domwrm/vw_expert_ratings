@@ -254,42 +254,41 @@ if expert_id:
         phase1_value = 4 if len(existing_phase1_rating) == 0 else int(existing_phase1_rating["value"].values[0])
         phase1_novelty = 4 if len(existing_phase1_rating) == 0 else int(existing_phase1_rating["novelty"].values[0])
         
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            st.markdown('<p class="small-text">Phase 1 Value: Meets client requirements?</p>', unsafe_allow_html=True)
-            phase1_value_rating = st.slider(
-                "Phase 1 Value",
-                min_value=1,
-                max_value=7,
-                value=phase1_value,
-                step=1,
-                key=f"value_phase1_{current_participant_id}",
-                label_visibility="collapsed"
-            )
+        # Value slider spanning full width
+        st.markdown('<p class="small-text">Phase 1 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+        phase1_value_rating = st.slider(
+            "Phase 1 Value",
+            min_value=1,
+            max_value=7,
+            value=phase1_value,
+            step=1,
+            key=f"value_phase1_{current_participant_id}",
+            label_visibility="collapsed"
+        )
         
-        with col2:
-            st.markdown('<p class="small-text">Phase 1 Novelty: How innovative?</p>', unsafe_allow_html=True)
-            phase1_novelty_rating = st.slider(
-                "Phase 1 Novelty",
-                min_value=1,
-                max_value=7,
-                value=phase1_novelty,
-                step=1,
-                key=f"novelty_phase1_{current_participant_id}",
-                label_visibility="collapsed"
-            )
+        # Novelty slider spanning full width
+        st.markdown('<p class="small-text">Phase 1 Novelty: How innovative?</p>', unsafe_allow_html=True)
+        phase1_novelty_rating = st.slider(
+            "Phase 1 Novelty",
+            min_value=1,
+            max_value=7,
+            value=phase1_novelty,
+            step=1,
+            key=f"novelty_phase1_{current_participant_id}",
+            label_visibility="collapsed"
+        )
         
-        with col3:
-            if st.button("Save Phase 1 Ratings", key=f"save_phase1_{current_participant_id}"):
-                ratings_df = save_phase_rating(
-                    ratings_df,
-                    expert_id,
-                    current_participant_id,
-                    1,
-                    phase1_value_rating,
-                    phase1_novelty_rating
-                )
-                st.success("Phase 1 ratings saved!")
+        # Save button
+        if st.button("Save Phase 1 Ratings", key=f"save_phase1_{current_participant_id}"):
+            ratings_df = save_phase_rating(
+                ratings_df,
+                expert_id,
+                current_participant_id,
+                1,
+                phase1_value_rating,
+                phase1_novelty_rating
+            )
+            st.success("Phase 1 ratings saved!")
         
         st.markdown("---")
         
@@ -331,42 +330,41 @@ if expert_id:
         phase2_value = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["value"].values[0])
         phase2_novelty = 4 if len(existing_phase2_rating) == 0 else int(existing_phase2_rating["novelty"].values[0])
         
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            st.markdown('<p class="small-text">Phase 2 Value: Meets client requirements?</p>', unsafe_allow_html=True)
-            phase2_value_rating = st.slider(
-                "Phase 2 Value",
-                min_value=1,
-                max_value=7,
-                value=phase2_value,
-                step=1,
-                key=f"value_phase2_{current_participant_id}",
-                label_visibility="collapsed"
-            )
+        # Value slider spanning full width
+        st.markdown('<p class="small-text">Phase 2 Value: Meets client requirements?</p>', unsafe_allow_html=True)
+        phase2_value_rating = st.slider(
+            "Phase 2 Value",
+            min_value=1,
+            max_value=7,
+            value=phase2_value,
+            step=1,
+            key=f"value_phase2_{current_participant_id}",
+            label_visibility="collapsed"
+        )
         
-        with col2:
-            st.markdown('<p class="small-text">Phase 2 Novelty: How innovative?</p>', unsafe_allow_html=True)
-            phase2_novelty_rating = st.slider(
-                "Phase 2 Novelty",
-                min_value=1,
-                max_value=7,
-                value=phase2_novelty,
-                step=1,
-                key=f"novelty_phase2_{current_participant_id}",
-                label_visibility="collapsed"
-            )
+        # Novelty slider spanning full width
+        st.markdown('<p class="small-text">Phase 2 Novelty: How innovative?</p>', unsafe_allow_html=True)
+        phase2_novelty_rating = st.slider(
+            "Phase 2 Novelty",
+            min_value=1,
+            max_value=7,
+            value=phase2_novelty,
+            step=1,
+            key=f"novelty_phase2_{current_participant_id}",
+            label_visibility="collapsed"
+        )
         
-        with col3:
-            if st.button("Save Phase 2 Ratings", key=f"save_phase2_{current_participant_id}"):
-                ratings_df = save_phase_rating(
-                    ratings_df,
-                    expert_id,
-                    current_participant_id,
-                    2,
-                    phase2_value_rating,
-                    phase2_novelty_rating
-                )
-                st.success("Phase 2 ratings saved!")
+        # Save button
+        if st.button("Save Phase 2 Ratings", key=f"save_phase2_{current_participant_id}"):
+            ratings_df = save_phase_rating(
+                ratings_df,
+                expert_id,
+                current_participant_id,
+                2,
+                phase2_value_rating,
+                phase2_novelty_rating
+            )
+            st.success("Phase 2 ratings saved!")
         
         # Navigation buttons at the bottom
         st.markdown("---")
